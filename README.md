@@ -1,4 +1,4 @@
-# threat-reports
+# hunt-ops-reports
 
 Public threat hunt reports with machine-readable artifacts. Each report ships a STIX 2.1 bundle, Sigma detection rules, an ATT&CK Navigator layer, a Unified Kill Chain mapping, and platform-specific hunting queries ready to paste into your SIEM or EDR.
 
