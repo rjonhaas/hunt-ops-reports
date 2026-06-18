@@ -2,6 +2,8 @@ meta:
   name: RoguePlanet
   description: "Windows Defender LPE via race condition in malware remediation flow. Standard user to SYSTEM on Windows 10/11 June 2026 patches."
   type: malware
+  cve: CVE-2026-50656
+  cvss: "7.8 (Important)"
   first_seen: "2026-06-18"
   author: "threat-reports"
   tlp: white

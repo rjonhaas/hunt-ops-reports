@@ -25,9 +25,9 @@
 | **Not Affected** | Windows Server -- standard users cannot mount ISO images without administrator rights; author notes all Server versions are architecturally vulnerable if that restriction is bypassed |
 | **Severity** | Critical |
 | **Requires Admin** | No -- standard user only |
-| **CVE** | N/A -- no CVE assigned at time of writing |
-| **CVSS** | N/A |
-| **Patch Status** | Unpatched as of 2026-06-18 |
+| **CVE** | [CVE-2026-50656](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-50656) |
+| **CVSS** | 7.8 (Important) — MSRC |
+| **Patch Status** | Unpatched — patch in development (Microsoft confirmed 2026-06-16) |
 | **First Seen** | 2026-06-18 |
 | **TLP** | WHITE |
 
