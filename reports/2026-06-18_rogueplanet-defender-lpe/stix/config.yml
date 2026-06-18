@@ -4,6 +4,9 @@ meta:
   type: malware
   cve: CVE-2026-50656
   cvss: "7.8 (Important)"
+  epss_score: 0.00343
+  epss_percentile: 0.2597
+  epss_date: "2026-06-18"
   first_seen: "2026-06-18"
   author: "threat-reports"
   tlp: white

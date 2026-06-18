@@ -27,6 +27,7 @@
 | **Requires Admin** | No -- standard user only |
 | **CVE** | [CVE-2026-50656](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-50656) |
 | **CVSS** | 7.8 (Important) — MSRC |
+| **EPSS** | 0.343% (25.97th percentile) — as of 2026-06-18; expect upward revision as PoC propagates |
 | **Patch Status** | Unpatched — patch in development (Microsoft confirmed 2026-06-16) |
 | **First Seen** | 2026-06-18 |
 | **TLP** | WHITE |
