@@ -1,0 +1,7 @@
+type,value,confidence,context,first_seen,tlp
+named_pipe,\\.\pipe\RoguePlanet,95,Hardcoded named pipe used for user-to-SYSTEM callback. No legitimate software uses this name.,2026-06-18,TLP:WHITE
+ads_stream,:WDFOO,90,Alternate data stream created on wermgr.exe as oplock anchor. Exploit-specific name with no legitimate use.,2026-06-18,TLP:WHITE
+directory_pattern,%TEMP%\RP_<UUID>,80,Working directory created in %TEMP% with RP_ prefix followed by a UUID (e.g. RP_3f2504e0-4f89-11d3-9a0c-0305e82c3301).,2026-06-18,TLP:WHITE
+file_path,C:\Windows\System32\wermgr.exe,70,Modified by exploit via Defender write-primitive. Verify SHA256 hash against Microsoft known-good baseline.,2026-06-18,TLP:WHITE
+dll_load,MpClient.dll (outside Defender processes),85,Exploit loads MpClient.dll directly to invoke MpScanStart/MpCleanStart. Any non-Defender process loading this DLL is anomalous.,2026-06-18,TLP:WHITE
+scheduled_task,\Microsoft\Windows\Windows Error Reporting\QueueReporting,65,WER QueueReporting task triggered manually by exploit via ITaskService COM for SYSTEM execution. Correlate with other indicators.,2026-06-18,TLP:WHITE

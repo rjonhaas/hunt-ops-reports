@@ -1,0 +1,130 @@
+{
+  "name": "RoguePlanet - Windows Defender LPE",
+  "versions": {
+    "attack": "14",
+    "navigator": "5.0",
+    "layer": "4.5"
+  },
+  "domain": "enterprise-attack",
+  "description": "ATT&CK coverage for RoguePlanet exploit (MSNightmare/RoguePlanet)",
+  "filters": {
+    "platforms": [
+      "Windows"
+    ]
+  },
+  "sorting": 0,
+  "layout": {
+    "layout": "side",
+    "aggregateFunction": "average",
+    "showID": true,
+    "showName": true,
+    "showAggregateScores": false,
+    "countUnscored": false,
+    "expandedSubtechniques": "annotated"
+  },
+  "hideDisabled": false,
+  "techniques": [
+    {
+      "techniqueID": "T1068",
+      "tactic": "privilege-escalation",
+      "color": "#ff6666",
+      "comment": "Race condition in Windows Defender remediation flow; FSCTL_REQUEST_OPLOCK on VSS shadow copy ADS pauses Defender mid-cleanup; junction swap redirects write to System32",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1548",
+      "tactic": "privilege-escalation",
+      "color": "#ff6666",
+      "comment": "Junction swap abuses MsMpEng.exe SYSTEM token and SeRestorePrivilege to write exploit payload to C:\\Windows\\System32\\wermgr.exe",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1548",
+      "tactic": "defense-evasion",
+      "color": "#ff6666",
+      "comment": "Defender itself is weaponized as the write primitive, bypassing standard user filesystem restrictions and trust controls",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1053.005",
+      "tactic": "execution",
+      "color": "#ff6666",
+      "comment": "WER QueueReporting scheduled task triggered via ITaskService COM interface; task runs wermgr.exe (now the payload) as NT AUTHORITY\\SYSTEM",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": true
+    },
+    {
+      "techniqueID": "T1036",
+      "tactic": "defense-evasion",
+      "color": "#ff6666",
+      "comment": "Exploit payload replaces and is named identically to the legitimate wermgr.exe in C:\\Windows\\System32; Defender itself performs the replacement",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1564.004",
+      "tactic": "defense-evasion",
+      "color": "#ff6666",
+      "comment": ":WDFOO alternate data stream created on wermgr.exe in temp dir; serves as the oplock anchor point on the VSS shadow copy device path",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": true
+    },
+    {
+      "techniqueID": "T1553",
+      "tactic": "defense-evasion",
+      "color": "#ff6666",
+      "comment": "~896 KB ISO mounted read-only without drive letter via OpenVirtualDisk/AttachVirtualDisk (ATTACH_VIRTUAL_DISK_FLAG_NO_DRIVE_LETTER) to deliver payload outside standard write paths",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1559.001",
+      "tactic": "execution",
+      "color": "#ff6666",
+      "comment": "Named pipe \\\\.\\pipe\\RoguePlanet hardcoded in binary; SYSTEM wermgr.exe instance creates pipe, user-context instance connects, LaunchConsoleInSessionId() spawns SYSTEM conhost in interactive session",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": true
+    }
+  ],
+  "gradient": {
+    "colors": [
+      "#ff6666ff",
+      "#ffe766ff",
+      "#8ec843ff"
+    ],
+    "minValue": 0,
+    "maxValue": 100
+  },
+  "legendItems": [
+    {
+      "label": "RoguePlanet technique",
+      "color": "#ff6666"
+    }
+  ],
+  "metadata": [],
+  "links": [],
+  "showTacticRowBackground": true,
+  "tacticRowBackground": "#dddddd",
+  "selectTechniquesAcrossTactics": false,
+  "selectSubtechniquesWithParent": false,
+  "selectVisibleTechniques": false
+}

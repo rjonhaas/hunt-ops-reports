@@ -1,0 +1,86 @@
+meta:
+  name: RoguePlanet
+  description: "Windows Defender LPE via race condition in malware remediation flow. Standard user to SYSTEM on Windows 10/11 June 2026 patches."
+  type: malware
+  first_seen: "2026-06-18"
+  author: "threat-reports"
+  tlp: white
+
+indicators:
+  - name: "RoguePlanet Named Pipe"
+    type: named_pipe
+    pattern: "[file:name = '\\\\.\\\\pipe\\\\RoguePlanet']"
+    confidence: 95
+    context: "Hardcoded named pipe used for user-to-SYSTEM callback. No legitimate software uses this name."
+    first_seen: "2026-06-18"
+
+  - name: "WDFOO ADS Stream"
+    type: ads_stream
+    pattern: "[file:name MATCHES '.*:WDFOO$']"
+    confidence: 90
+    context: "Alternate data stream created on wermgr.exe as oplock anchor. Exploit-specific name."
+    first_seen: "2026-06-18"
+
+  - name: "RoguePlanet Working Directory"
+    type: directory_pattern
+    pattern: "[directory:path MATCHES '.*\\\\\\\\RP_[0-9a-fA-F\\\\-]{36}$']"
+    confidence: 80
+    context: "Working directory created in %TEMP% with RP_ prefix followed by UUID."
+    first_seen: "2026-06-18"
+
+  - name: "wermgr.exe Modified in System32"
+    type: file_path
+    pattern: "[file:parent_directory_ref.path = 'C:\\\\Windows\\\\System32' AND file:name = 'wermgr.exe']"
+    confidence: 70
+    context: "Defender plants exploit payload at this path. Verify hash against known-good baseline."
+    first_seen: "2026-06-18"
+
+  - name: "MpClient.dll Loaded Outside Defender"
+    type: dll_load
+    pattern: "[process:name NOT IN ('MsMpEng.exe','MpCmdRun.exe','SecurityHealthSystray.exe') AND file:name = 'MpClient.dll']"
+    confidence: 85
+    context: "Exploit loads MpClient.dll directly to invoke MpScanStart/MpCleanStart without going through normal Defender channels."
+    first_seen: "2026-06-18"
+
+  - name: "WER QueueReporting Task Anomalous Execution"
+    type: scheduled_task
+    pattern: "[process:name = 'wermgr.exe' AND process:parent_ref.name = 'taskeng.exe']"
+    confidence: 65
+    context: "WER QueueReporting task triggered manually by exploit for SYSTEM execution. Correlate with other indicators."
+    first_seen: "2026-06-18"
+
+attack_techniques:
+  - technique_id: T1068
+    name: "Exploitation for Privilege Escalation"
+    tactic: "privilege-escalation"
+    notes: "Race condition in Windows Defender remediation flow used to escalate from standard user to SYSTEM"
+
+  - technique_id: T1548
+    name: "Abuse Elevation Control Mechanism"
+    tactic: "privilege-escalation"
+    notes: "Junction swap abuses Defender's trusted file write path to plant payload in System32"
+
+  - technique_id: T1053.005
+    name: "Scheduled Task/Job: Scheduled Task"
+    tactic: "execution"
+    notes: "WER QueueReporting task triggered via ITaskService COM interface for SYSTEM execution"
+
+  - technique_id: T1036
+    name: "Masquerading"
+    tactic: "defense-evasion"
+    notes: "Exploit payload disguised as wermgr.exe placed in C:\\Windows\\System32"
+
+  - technique_id: T1564.004
+    name: "Hide Artifacts: NTFS File Attributes"
+    tactic: "defense-evasion"
+    notes: ":WDFOO alternate data stream used as oplock anchor during race condition"
+
+  - technique_id: T1553
+    name: "Subvert Trust Controls"
+    tactic: "defense-evasion"
+    notes: "ISO image mounted via VirtDisk API to deliver payload outside normal filesystem write paths"
+
+  - technique_id: T1559.001
+    name: "Inter-Process Communication: Component Object Model"
+    tactic: "execution"
+    notes: "Named pipe \\.\\pipe\\RoguePlanet used for callback from SYSTEM instance to user session"

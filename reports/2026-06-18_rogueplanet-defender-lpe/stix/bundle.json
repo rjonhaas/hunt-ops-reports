@@ -1,0 +1,441 @@
+{
+  "type": "bundle",
+  "id": "bundle--f4a3c2b1-d5e6-4f78-9a0b-c1d2e3f4a5b6",
+  "spec_version": "2.1",
+  "objects": [
+    {
+      "type": "identity",
+      "spec_version": "2.1",
+      "id": "identity--00000001-0000-4000-a000-000000000001",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "name": "threat-reports",
+      "identity_class": "organization",
+      "description": "Public threat intelligence published by threat-reports"
+    },
+    {
+      "type": "malware",
+      "spec_version": "2.1",
+      "id": "malware--a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "name": "RoguePlanet",
+      "description": "Windows Defender LPE via race condition in malware remediation flow. Standard user to SYSTEM on Windows 10/11 June 2026 patches.",
+      "malware_types": ["exploit"],
+      "is_family": false,
+      "first_seen": "2026-06-18T00:00:00.000Z"
+    },
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--b1c2d3e4-f5a6-7890-bcde-f12345678901",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "name": "RoguePlanet Named Pipe",
+      "description": "Hardcoded named pipe used for user-to-SYSTEM callback. No legitimate software uses this name.",
+      "indicator_types": ["malicious-activity"],
+      "pattern": "[file:name = '\\\\.\\\\pipe\\\\RoguePlanet']",
+      "pattern_type": "stix",
+      "valid_from": "2026-06-18T00:00:00.000Z",
+      "confidence": 95,
+      "object_marking_refs": ["marking-definition--613f2e26-407d-48c7-9eca-b8e91df99dc9"]
+    },
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--c2d3e4f5-a6b7-8901-cdef-012345678902",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "name": "WDFOO ADS Stream",
+      "description": "Alternate data stream created on wermgr.exe as oplock anchor. Exploit-specific name.",
+      "indicator_types": ["malicious-activity"],
+      "pattern": "[file:name MATCHES '.*:WDFOO$']",
+      "pattern_type": "stix",
+      "valid_from": "2026-06-18T00:00:00.000Z",
+      "confidence": 90,
+      "object_marking_refs": ["marking-definition--613f2e26-407d-48c7-9eca-b8e91df99dc9"]
+    },
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--d3e4f5a6-b7c8-9012-defa-123456789003",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "name": "RoguePlanet Working Directory",
+      "description": "Working directory created in %TEMP% with RP_ prefix followed by UUID.",
+      "indicator_types": ["malicious-activity"],
+      "pattern": "[directory:path MATCHES '.*\\\\\\\\RP_[0-9a-fA-F\\\\-]{36}$']",
+      "pattern_type": "stix",
+      "valid_from": "2026-06-18T00:00:00.000Z",
+      "confidence": 80,
+      "object_marking_refs": ["marking-definition--613f2e26-407d-48c7-9eca-b8e91df99dc9"]
+    },
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--e4f5a6b7-c8d9-0123-efab-234567890004",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "name": "wermgr.exe Modified in System32",
+      "description": "Defender plants exploit payload at this path. Verify hash against known-good baseline.",
+      "indicator_types": ["malicious-activity"],
+      "pattern": "[file:parent_directory_ref.path = 'C:\\\\Windows\\\\System32' AND file:name = 'wermgr.exe']",
+      "pattern_type": "stix",
+      "valid_from": "2026-06-18T00:00:00.000Z",
+      "confidence": 70,
+      "object_marking_refs": ["marking-definition--613f2e26-407d-48c7-9eca-b8e91df99dc9"]
+    },
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--f5a6b7c8-d9e0-1234-fabc-345678900005",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "name": "MpClient.dll Loaded Outside Defender",
+      "description": "Exploit loads MpClient.dll directly to invoke MpScanStart/MpCleanStart without going through normal Defender channels.",
+      "indicator_types": ["malicious-activity"],
+      "pattern": "[process:name NOT IN ('MsMpEng.exe','MpCmdRun.exe','SecurityHealthSystray.exe') AND file:name = 'MpClient.dll']",
+      "pattern_type": "stix",
+      "valid_from": "2026-06-18T00:00:00.000Z",
+      "confidence": 85,
+      "object_marking_refs": ["marking-definition--613f2e26-407d-48c7-9eca-b8e91df99dc9"]
+    },
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--a6b7c8d9-e0f1-2345-abcd-456789000006",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "name": "WER QueueReporting Task Anomalous Execution",
+      "description": "WER QueueReporting task triggered manually by exploit for SYSTEM execution. Correlate with other indicators.",
+      "indicator_types": ["malicious-activity"],
+      "pattern": "[process:name = 'wermgr.exe' AND process:parent_ref.name = 'taskeng.exe']",
+      "pattern_type": "stix",
+      "valid_from": "2026-06-18T00:00:00.000Z",
+      "confidence": 65,
+      "object_marking_refs": ["marking-definition--613f2e26-407d-48c7-9eca-b8e91df99dc9"]
+    },
+    {
+      "type": "attack-pattern",
+      "spec_version": "2.1",
+      "id": "attack-pattern--b7c8d9e0-f1a2-3456-bcde-567890100007",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "name": "Exploitation for Privilege Escalation",
+      "description": "Race condition in Windows Defender remediation flow used to escalate from standard user to SYSTEM",
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "privilege-escalation"
+        }
+      ],
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "external_id": "T1068",
+          "url": "https://attack.mitre.org/techniques/T1068/"
+        }
+      ]
+    },
+    {
+      "type": "attack-pattern",
+      "spec_version": "2.1",
+      "id": "attack-pattern--c8d9e0f1-a2b3-4567-cdef-678901200008",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "name": "Abuse Elevation Control Mechanism",
+      "description": "Junction swap abuses Defender's trusted file write path to plant payload in System32",
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "privilege-escalation"
+        }
+      ],
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "external_id": "T1548",
+          "url": "https://attack.mitre.org/techniques/T1548/"
+        }
+      ]
+    },
+    {
+      "type": "attack-pattern",
+      "spec_version": "2.1",
+      "id": "attack-pattern--d9e0f1a2-b3c4-5678-defa-789012300009",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "name": "Scheduled Task/Job: Scheduled Task",
+      "description": "WER QueueReporting task triggered via ITaskService COM interface for SYSTEM execution",
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "execution"
+        }
+      ],
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "external_id": "T1053.005",
+          "url": "https://attack.mitre.org/techniques/T1053/005/"
+        }
+      ]
+    },
+    {
+      "type": "attack-pattern",
+      "spec_version": "2.1",
+      "id": "attack-pattern--e0f1a2b3-c4d5-6789-efab-890123400010",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "name": "Masquerading",
+      "description": "Exploit payload disguised as wermgr.exe placed in C:\\Windows\\System32",
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "defense-evasion"
+        }
+      ],
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "external_id": "T1036",
+          "url": "https://attack.mitre.org/techniques/T1036/"
+        }
+      ]
+    },
+    {
+      "type": "attack-pattern",
+      "spec_version": "2.1",
+      "id": "attack-pattern--f1a2b3c4-d5e6-7890-fabc-901234500011",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "name": "Hide Artifacts: NTFS File Attributes",
+      "description": ":WDFOO alternate data stream used as oplock anchor during race condition",
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "defense-evasion"
+        }
+      ],
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "external_id": "T1564.004",
+          "url": "https://attack.mitre.org/techniques/T1564/004/"
+        }
+      ]
+    },
+    {
+      "type": "attack-pattern",
+      "spec_version": "2.1",
+      "id": "attack-pattern--a2b3c4d5-e6f7-8901-abcd-012345600012",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "name": "Subvert Trust Controls",
+      "description": "ISO image mounted via VirtDisk API to deliver payload outside normal filesystem write paths",
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "defense-evasion"
+        }
+      ],
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "external_id": "T1553",
+          "url": "https://attack.mitre.org/techniques/T1553/"
+        }
+      ]
+    },
+    {
+      "type": "attack-pattern",
+      "spec_version": "2.1",
+      "id": "attack-pattern--b3c4d5e6-f7a8-9012-bcde-123456700013",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "name": "Inter-Process Communication: Component Object Model",
+      "description": "Named pipe \\\\.\\pipe\\RoguePlanet used for callback from SYSTEM instance to user session",
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "execution"
+        }
+      ],
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "external_id": "T1559.001",
+          "url": "https://attack.mitre.org/techniques/T1559/001/"
+        }
+      ]
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--c4d5e6f7-a8b9-0123-cdef-234567800014",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "relationship_type": "indicates",
+      "source_ref": "indicator--b1c2d3e4-f5a6-7890-bcde-f12345678901",
+      "target_ref": "malware--a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--d5e6f7a8-b9c0-1234-defa-345678900015",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "relationship_type": "indicates",
+      "source_ref": "indicator--c2d3e4f5-a6b7-8901-cdef-012345678902",
+      "target_ref": "malware--a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--e6f7a8b9-c0d1-2345-efab-456789000016",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "relationship_type": "indicates",
+      "source_ref": "indicator--d3e4f5a6-b7c8-9012-defa-123456789003",
+      "target_ref": "malware--a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--f7a8b9c0-d1e2-3456-fabc-567890100017",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "relationship_type": "indicates",
+      "source_ref": "indicator--e4f5a6b7-c8d9-0123-efab-234567890004",
+      "target_ref": "malware--a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--a8b9c0d1-e2f3-4567-abcd-678901200018",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "relationship_type": "indicates",
+      "source_ref": "indicator--f5a6b7c8-d9e0-1234-fabc-345678900005",
+      "target_ref": "malware--a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--b9c0d1e2-f3a4-5678-bcde-789012300019",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "relationship_type": "indicates",
+      "source_ref": "indicator--a6b7c8d9-e0f1-2345-abcd-456789000006",
+      "target_ref": "malware--a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--c0d1e2f3-a4b5-6789-cdef-890123400020",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "relationship_type": "uses",
+      "source_ref": "malware--a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "target_ref": "attack-pattern--b7c8d9e0-f1a2-3456-bcde-567890100007"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--d1e2f3a4-b5c6-7890-defa-901234500021",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "relationship_type": "uses",
+      "source_ref": "malware--a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "target_ref": "attack-pattern--c8d9e0f1-a2b3-4567-cdef-678901200008"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--e2f3a4b5-c6d7-8901-efab-012345600022",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "relationship_type": "uses",
+      "source_ref": "malware--a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "target_ref": "attack-pattern--d9e0f1a2-b3c4-5678-defa-789012300009"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--f3a4b5c6-d7e8-9012-fabc-123456700023",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "relationship_type": "uses",
+      "source_ref": "malware--a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "target_ref": "attack-pattern--e0f1a2b3-c4d5-6789-efab-890123400010"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--a4b5c6d7-e8f9-0123-abcd-234567800024",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "relationship_type": "uses",
+      "source_ref": "malware--a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "target_ref": "attack-pattern--f1a2b3c4-d5e6-7890-fabc-901234500011"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--b5c6d7e8-f9a0-1234-bcde-345678900025",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "relationship_type": "uses",
+      "source_ref": "malware--a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "target_ref": "attack-pattern--a2b3c4d5-e6f7-8901-abcd-012345600012"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--c6d7e8f9-a0b1-2345-cdef-456789000026",
+      "created": "2026-06-18T00:00:00.000Z",
+      "modified": "2026-06-18T00:00:00.000Z",
+      "created_by_ref": "identity--00000001-0000-4000-a000-000000000001",
+      "relationship_type": "uses",
+      "source_ref": "malware--a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "target_ref": "attack-pattern--b3c4d5e6-f7a8-9012-bcde-123456700013"
+    },
+    {
+      "type": "marking-definition",
+      "spec_version": "2.1",
+      "id": "marking-definition--613f2e26-407d-48c7-9eca-b8e91df99dc9",
+      "created": "2017-01-20T00:00:00.000Z",
+      "definition_type": "tlp",
+      "name": "TLP:WHITE",
+      "definition": {
+        "tlp": "white"
+      }
+    }
+  ]
+}

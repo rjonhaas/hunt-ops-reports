@@ -1,0 +1,84 @@
+// ============================================================
+// RoguePlanet Windows Defender LPE — Elastic KQL Queries
+// Source: https://github.com/MSNightmare/RoguePlanet
+// Date: 2026-06-18
+// TLP: WHITE
+//
+// Assumes ECS-mapped Sysmon data in Elasticsearch.
+// Index pattern: logs-windows.* or winlogbeat-*
+// ECS field mappings:
+//   EventCode         -> event.code
+//   Image             -> winlog.event_data.Image
+//   PipeName          -> winlog.event_data.PipeName
+//   ImageLoaded       -> winlog.event_data.ImageLoaded
+//   ParentImage       -> winlog.event_data.ParentImage
+//   TargetFilename    -> winlog.event_data.TargetFilename
+//   CommandLine       -> winlog.event_data.CommandLine
+// ============================================================
+
+
+// ------------------------------------------------------------
+// DETECTION 1: RoguePlanet Named Pipe (Sysmon EID 17)
+// Confidence: CRITICAL — hardcoded pipe name, zero false positives
+// ------------------------------------------------------------
+event.code: "17" and winlog.event_data.PipeName: "\\RoguePlanet"
+
+
+// ------------------------------------------------------------
+// DETECTION 2: MpClient.dll Loaded Outside Defender (Sysmon EID 7)
+// Confidence: HIGH — any non-Defender process loading this DLL is anomalous
+// ------------------------------------------------------------
+event.code: "7"
+  and winlog.event_data.ImageLoaded: *\\MpClient.dll
+  and not winlog.event_data.Image: (
+    *\\MsMpEng.exe
+    or *\\MpCmdRun.exe
+    or *\\SecurityHealthSystray.exe
+    or *\\MpCopyAccelerator.exe
+    or *\\NisSrv.exe
+    or *\\MpSigStub.exe
+    or *\\MpDlpCmd.exe
+  )
+
+
+// ------------------------------------------------------------
+// DETECTION 3: wermgr.exe Spawning Shell or Console (Sysmon EID 1)
+// Confidence: HIGH — wermgr.exe never legitimately spawns interactive shells
+// ------------------------------------------------------------
+event.code: "1"
+  and winlog.event_data.ParentImage: *\\wermgr.exe
+  and winlog.event_data.Image: (
+    *\\cmd.exe
+    or *\\powershell.exe
+    or *\\pwsh.exe
+    or *\\conhost.exe
+  )
+
+
+// ------------------------------------------------------------
+// DETECTION 4: C:\Windows\System32\wermgr.exe Written by Unexpected Process (Sysmon EID 11)
+// Confidence: CRITICAL — fires AFTER exploit succeeds; correlate with other indicators
+// NOTE: MsMpEng.exe is intentionally NOT filtered — Defender is the write primitive in this exploit.
+//       If MsMpEng.exe is the writer, that IS the exploit succeeding. Correlate with Detection 1.
+// ------------------------------------------------------------
+event.code: "11"
+  and winlog.event_data.TargetFilename: "C:\\Windows\\System32\\wermgr.exe"
+  and not winlog.event_data.Image: (
+    *\\TiWorker.exe
+    or *\\TrustedInstaller.exe
+    or *\\wuauclt.exe
+    or *\\svchost.exe
+  )
+
+
+// ------------------------------------------------------------
+// DETECTION 5: WER QueueReporting Task Anomalous Trigger (Sysmon EID 1)
+// Confidence: MEDIUM — correlate with Detections 1 or 4 for higher fidelity
+// ------------------------------------------------------------
+event.code: "1"
+  and winlog.event_data.Image: *\\wermgr.exe
+  and not winlog.event_data.ParentImage: (
+    *\\svchost.exe
+    or *\\wermgr.exe
+  )
+  and not winlog.event_data.CommandLine: (*queuereporting* or *QueueReporting*)

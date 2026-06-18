@@ -1,0 +1,37 @@
+title: MpClient.dll Loaded by Non-Defender Process
+id: b2c3d4e5-f6a7-8901-bcde-f01234567891
+status: stable
+description: |
+  Detects MpClient.dll loaded by any process other than known Windows Defender processes.
+  The RoguePlanet exploit loads MpClient.dll directly to invoke MpScanStart() and MpCleanStart()
+  without going through normal Defender channels, forcing Defender to scan and remediate a controlled file.
+  Any non-Defender process loading MpClient.dll is anomalous and warrants investigation.
+author: threat-reports
+date: 2026-06-18
+references:
+  - https://github.com/MSNightmare/RoguePlanet
+logsource:
+  product: windows
+  category: image_load
+detection:
+  selection:
+    ImageLoaded|endswith: '\MpClient.dll'
+  filter_defender:
+    Image|endswith:
+      - '\MsMpEng.exe'
+      - '\MpCmdRun.exe'
+      - '\SecurityHealthSystray.exe'
+      - '\MpCopyAccelerator.exe'
+      - '\NisSrv.exe'
+      - '\MpSigStub.exe'
+      - '\MpDlpCmd.exe'
+  condition: selection and not filter_defender
+falsepositives:
+  - Third-party security products that integrate with Windows Defender APIs
+  - Custom enterprise tooling that calls Defender APIs for scan orchestration
+level: high
+tags:
+  - attack.defense_evasion
+  - attack.t1036
+  - attack.privilege_escalation
+  - attack.t1068

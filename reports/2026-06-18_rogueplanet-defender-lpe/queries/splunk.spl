@@ -1,0 +1,105 @@
+| comment "============================================================"
+| comment "RoguePlanet Windows Defender LPE - Splunk SPL Queries"
+| comment "Source: https://github.com/MSNightmare/RoguePlanet"
+| comment "Date: 2026-06-18 | TLP: WHITE"
+| comment "index=windows sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+| comment "============================================================"
+
+
+| comment "------------------------------------------------------------"
+| comment "DETECTION 1: RoguePlanet Named Pipe (Sysmon EID 17)"
+| comment "Confidence: CRITICAL - hardcoded pipe name, zero false positives"
+| comment "------------------------------------------------------------"
+
+index=windows sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+  EventCode=17
+  PipeName="\\RoguePlanet"
+| table _time, Computer, ProcessId, Image, PipeName, User
+| sort -_time
+
+
+| comment "------------------------------------------------------------"
+| comment "DETECTION 2: MpClient.dll Loaded Outside Defender (Sysmon EID 7)"
+| comment "Confidence: HIGH"
+| comment "------------------------------------------------------------"
+
+index=windows sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+  EventCode=7
+  ImageLoaded="*\\MpClient.dll"
+  NOT Image IN (
+    "*\\MsMpEng.exe",
+    "*\\MpCmdRun.exe",
+    "*\\SecurityHealthSystray.exe",
+    "*\\MpCopyAccelerator.exe",
+    "*\\NisSrv.exe",
+    "*\\MpSigStub.exe",
+    "*\\MpDlpCmd.exe"
+  )
+| table _time, Computer, ProcessId, Image, ImageLoaded, User
+| sort -_time
+
+
+| comment "------------------------------------------------------------"
+| comment "DETECTION 3: wermgr.exe Spawning Shell or Console (Sysmon EID 1)"
+| comment "Confidence: HIGH"
+| comment "------------------------------------------------------------"
+
+index=windows sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+  EventCode=1
+  ParentImage="*\\wermgr.exe"
+  (Image="*\\cmd.exe" OR Image="*\\powershell.exe" OR Image="*\\pwsh.exe" OR Image="*\\conhost.exe")
+| table _time, Computer, ProcessId, Image, ParentImage, CommandLine, User, IntegrityLevel
+| sort -_time
+
+
+| comment "------------------------------------------------------------"
+| comment "DETECTION 4: C:\Windows\System32\wermgr.exe Written by Unexpected Process (Sysmon EID 11)"
+| comment "Confidence: CRITICAL - fires AFTER exploit succeeds"
+| comment "NOTE: MsMpEng.exe writing this path = exploit succeeded via Defender write-primitive"
+| comment "------------------------------------------------------------"
+
+index=windows sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+  EventCode=11
+  TargetFilename="C:\\Windows\\System32\\wermgr.exe"
+  NOT Image IN (
+    "*\\TiWorker.exe",
+    "*\\TrustedInstaller.exe",
+    "*\\wuauclt.exe",
+    "*\\svchost.exe"
+  )
+| table _time, Computer, Image, TargetFilename, User
+| sort -_time
+
+
+| comment "------------------------------------------------------------"
+| comment "DETECTION 5: WER QueueReporting Task Anomalous Trigger (Sysmon EID 1)"
+| comment "Confidence: MEDIUM - correlate with Detections 1 or 4"
+| comment "------------------------------------------------------------"
+
+index=windows sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+  EventCode=1
+  Image="*\\wermgr.exe"
+  NOT ParentImage IN ("*\\svchost.exe", "*\\wermgr.exe")
+  NOT CommandLine IN ("*queuereporting*", "*QueueReporting*")
+| table _time, Computer, ProcessId, Image, ParentImage, CommandLine, User, IntegrityLevel
+| sort -_time
+
+
+| comment "------------------------------------------------------------"
+| comment "COMBINED HUNT: Correlate named pipe + wermgr.exe write (highest fidelity)"
+| comment "------------------------------------------------------------"
+
+index=windows sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+  ((EventCode=17 PipeName="\\RoguePlanet")
+   OR (EventCode=11 TargetFilename="C:\\Windows\\System32\\wermgr.exe")
+   OR (EventCode=7 ImageLoaded="*\\MpClient.dll" NOT Image IN ("*\\MsMpEng.exe","*\\MpCmdRun.exe","*\\NisSrv.exe"))
+   OR (EventCode=1 ParentImage="*\\wermgr.exe" (Image="*\\cmd.exe" OR Image="*\\conhost.exe")))
+| eval indicator=case(
+    EventCode=17, "named_pipe_RoguePlanet",
+    EventCode=11 AND TargetFilename="C:\\Windows\\System32\\wermgr.exe", "system32_wermgr_write",
+    EventCode=7, "mpclient_dll_load",
+    EventCode=1 AND ParentImage="*\\wermgr.exe", "wermgr_shell_spawn",
+    true(), "other"
+  )
+| stats count by Computer, indicator, _time
+| sort Computer, _time

@@ -1,0 +1,172 @@
+// ============================================================
+// RoguePlanet Windows Defender LPE — MDE Advanced Hunting KQL
+// Source: https://github.com/MSNightmare/RoguePlanet
+// Date: 2026-06-18 | TLP: WHITE
+//
+// Tables used:
+//   DeviceEvents          — named pipe events, misc action events
+//   DeviceImageLoadEvents — DLL load events
+//   DeviceProcessEvents   — process creation events
+//   DeviceFileEvents      — file write/create events
+// ============================================================
+
+
+// ------------------------------------------------------------
+// DETECTION 1: RoguePlanet Named Pipe (DeviceEvents)
+// Confidence: CRITICAL — hardcoded pipe name, zero false positives
+// ------------------------------------------------------------
+DeviceEvents
+| where ActionType == "NamedPipeEvent"
+| where AdditionalFields has "RoguePlanet"
+| project
+    Timestamp,
+    DeviceName,
+    InitiatingProcessAccountName,
+    InitiatingProcessAccountSid,
+    InitiatingProcessFileName,
+    InitiatingProcessFolderPath,
+    InitiatingProcessCommandLine,
+    InitiatingProcessIntegrityLevel,
+    AdditionalFields
+| order by Timestamp desc
+
+
+// ------------------------------------------------------------
+// DETECTION 2: MpClient.dll Loaded Outside Defender (DeviceImageLoadEvents)
+// Confidence: HIGH
+// ------------------------------------------------------------
+DeviceImageLoadEvents
+| where FileName =~ "MpClient.dll"
+| where InitiatingProcessFileName !in~ (
+    "MsMpEng.exe",
+    "MpCmdRun.exe",
+    "SecurityHealthSystray.exe",
+    "MpCopyAccelerator.exe",
+    "NisSrv.exe",
+    "MpSigStub.exe",
+    "MpDlpCmd.exe"
+  )
+| project
+    Timestamp,
+    DeviceName,
+    InitiatingProcessFileName,
+    InitiatingProcessFolderPath,
+    InitiatingProcessCommandLine,
+    InitiatingProcessAccountName,
+    InitiatingProcessIntegrityLevel,
+    FolderPath,
+    FileName,
+    SHA256
+| order by Timestamp desc
+
+
+// ------------------------------------------------------------
+// DETECTION 3: wermgr.exe Spawning Shell or Console (DeviceProcessEvents)
+// Confidence: HIGH
+// ------------------------------------------------------------
+DeviceProcessEvents
+| where InitiatingProcessFileName =~ "wermgr.exe"
+| where FileName in~ ("cmd.exe", "powershell.exe", "pwsh.exe", "conhost.exe")
+| project
+    Timestamp,
+    DeviceName,
+    AccountName,
+    AccountSid,
+    FileName,
+    FolderPath,
+    ProcessCommandLine,
+    ProcessIntegrityLevel,
+    InitiatingProcessFileName,
+    InitiatingProcessFolderPath,
+    InitiatingProcessCommandLine,
+    InitiatingProcessIntegrityLevel,
+    InitiatingProcessAccountName
+| order by Timestamp desc
+
+
+// ------------------------------------------------------------
+// DETECTION 4: C:\Windows\System32\wermgr.exe Written by Unexpected Process (DeviceFileEvents)
+// Confidence: CRITICAL — fires AFTER exploit succeeds
+// NOTE: MsMpEng.exe as InitiatingProcessFileName = Defender was weaponized as write primitive.
+//       This IS the exploit succeeding. Correlate with Detection 1 to confirm.
+// ------------------------------------------------------------
+DeviceFileEvents
+| where FolderPath =~ @"C:\Windows\System32"
+| where FileName =~ "wermgr.exe"
+| where ActionType in ("FileCreated", "FileModified", "FileRenamed")
+| where InitiatingProcessFileName !in~ (
+    "TiWorker.exe",
+    "TrustedInstaller.exe",
+    "wuauclt.exe",
+    "svchost.exe"
+  )
+| project
+    Timestamp,
+    DeviceName,
+    InitiatingProcessFileName,
+    InitiatingProcessFolderPath,
+    InitiatingProcessCommandLine,
+    InitiatingProcessAccountName,
+    InitiatingProcessIntegrityLevel,
+    FolderPath,
+    FileName,
+    ActionType,
+    SHA256
+| order by Timestamp desc
+
+
+// ------------------------------------------------------------
+// DETECTION 5: WER QueueReporting Task Anomalous Trigger (DeviceProcessEvents)
+// Confidence: MEDIUM — correlate with Detections 1 or 4
+// ------------------------------------------------------------
+DeviceProcessEvents
+| where FileName =~ "wermgr.exe"
+| where InitiatingProcessFileName !~ "svchost.exe"
+| where InitiatingProcessFileName !~ "wermgr.exe"
+| where ProcessCommandLine !contains "/queuereporting"
+| where ProcessCommandLine !contains "QueueReporting"
+| project
+    Timestamp,
+    DeviceName,
+    AccountName,
+    AccountSid,
+    FileName,
+    ProcessCommandLine,
+    ProcessIntegrityLevel,
+    InitiatingProcessFileName,
+    InitiatingProcessCommandLine,
+    InitiatingProcessAccountName,
+    InitiatingProcessIntegrityLevel
+| order by Timestamp desc
+
+
+// ------------------------------------------------------------
+// COMBINED HUNT: All RoguePlanet indicators in one query
+// Use this for a triage sweep across an environment
+// ------------------------------------------------------------
+let named_pipes = DeviceEvents
+| where ActionType == "NamedPipeEvent"
+| where AdditionalFields has "RoguePlanet"
+| extend IndicatorType = "named_pipe_RoguePlanet", Detail = AdditionalFields;
+
+let dll_loads = DeviceImageLoadEvents
+| where FileName =~ "MpClient.dll"
+| where InitiatingProcessFileName !in~ ("MsMpEng.exe","MpCmdRun.exe","SecurityHealthSystray.exe","NisSrv.exe","MpCopyAccelerator.exe")
+| extend IndicatorType = "mpclient_dll_load_outside_defender", Detail = tostring(FolderPath);
+
+let wermgr_shells = DeviceProcessEvents
+| where InitiatingProcessFileName =~ "wermgr.exe"
+| where FileName in~ ("cmd.exe","powershell.exe","pwsh.exe","conhost.exe")
+| extend IndicatorType = "wermgr_shell_spawn", Detail = ProcessCommandLine;
+
+let sys32_writes = DeviceFileEvents
+| where FolderPath =~ @"C:\Windows\System32" and FileName =~ "wermgr.exe"
+| where InitiatingProcessFileName !in~ ("TiWorker.exe","TrustedInstaller.exe","wuauclt.exe","svchost.exe")
+| extend IndicatorType = "system32_wermgr_write", Detail = strcat(InitiatingProcessFileName, " -> ", FolderPath, "\\", FileName);
+
+named_pipes
+| union dll_loads
+| union wermgr_shells
+| union sys32_writes
+| project Timestamp, DeviceName, IndicatorType, Detail, InitiatingProcessAccountName, InitiatingProcessFileName
+| order by Timestamp desc

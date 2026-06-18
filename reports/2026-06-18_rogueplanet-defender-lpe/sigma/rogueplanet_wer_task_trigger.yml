@@ -1,0 +1,45 @@
+title: WER QueueReporting Task Triggered by Non-Standard Parent
+id: f6a7b8c9-d0e1-2345-fabc-345678900895
+status: stable
+description: |
+  Detects the Windows Error Reporting QueueReporting scheduled task executing wermgr.exe with
+  a parent process other than svchost.exe, which is the only legitimate parent for scheduled
+  task execution on modern Windows. The RoguePlanet LPE exploit triggers this task manually
+  via the ITaskService COM interface to execute the exploit payload (now C:\Windows\System32\wermgr.exe)
+  as NT AUTHORITY\SYSTEM.
+
+  In the exploit chain, wermgr.exe may also be invoked directly from taskeng.exe on older
+  Windows 10 builds. The parent exclusion filter covers both execution paths.
+
+  This rule has moderate confidence on its own; it is most valuable when correlated with the
+  named pipe indicator (rogueplanet_named_pipe) or the System32 wermgr.exe write
+  (rogueplanet_system32_write).
+author: threat-reports
+date: 2026-06-18
+references:
+  - https://github.com/MSNightmare/RoguePlanet
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection:
+    Image|endswith: '\wermgr.exe'
+  filter_normal_wer:
+    ParentImage|endswith:
+      - '\svchost.exe'
+      - '\wermgr.exe'
+  filter_normal_commandline:
+    CommandLine|contains:
+      - '/queuereporting'
+      - '-queuereporting'
+      - 'QueueReporting'
+  condition: selection and not (filter_normal_wer or filter_normal_commandline)
+falsepositives:
+  - Non-standard WER configurations where wermgr.exe is invoked directly by third-party software
+  - Enterprise crash-reporting tools that wrap WER functionality
+level: medium
+tags:
+  - attack.execution
+  - attack.t1053.005
+  - attack.privilege_escalation
+  - attack.t1068

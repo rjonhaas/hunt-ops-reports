@@ -1,0 +1,27 @@
+title: RoguePlanet Named Pipe Creation
+id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+status: stable
+description: |
+  Detects creation of the named pipe hardcoded in the RoguePlanet Windows Defender LPE exploit.
+  The pipe \\.\pipe\RoguePlanet is created by the SYSTEM-context wermgr.exe instance to provide a
+  callback channel to the user-context exploit process. This name is hardcoded and has no known
+  legitimate use. This is the highest-fidelity detection for RoguePlanet with zero expected false positives.
+author: threat-reports
+date: 2026-06-18
+references:
+  - https://github.com/MSNightmare/RoguePlanet
+logsource:
+  product: windows
+  category: pipe_created
+detection:
+  selection:
+    PipeName: '\RoguePlanet'
+  condition: selection
+falsepositives:
+  - None known
+level: critical
+tags:
+  - attack.privilege_escalation
+  - attack.t1068
+  - attack.execution
+  - attack.t1559.001

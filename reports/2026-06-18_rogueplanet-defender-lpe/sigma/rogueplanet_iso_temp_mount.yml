@@ -1,0 +1,50 @@
+title: virtdisk.dll Loaded by Non-Standard Process (ISO Mount Proxy)
+id: e5f6a7b8-c9d0-1234-efab-234567890894
+status: experimental
+description: |
+  Detects virtdisk.dll being loaded by a process that is not a known disk management or
+  virtualization tool. The RoguePlanet exploit embeds an ~896 KB ISO image in its binary
+  (rawData[917504]) and mounts it read-only without a drive letter using the VirtDisk API
+  (OpenVirtualDisk + AttachVirtualDisk with ATTACH_VIRTUAL_DISK_FLAG_NO_DRIVE_LETTER).
+  Loading virtdisk.dll is a proxy indicator for this ISO mount activity, since Sysmon does
+  not directly log VirtDisk API calls.
+
+  NOTE: Lower confidence than other RoguePlanet rules. Many legitimate applications mount
+  ISO files (e.g., setup programs, game launchers, backup tools). This rule is most useful
+  when correlated with RP_ temp directory creation (rogueplanet_system32_write) or the
+  named pipe indicator (rogueplanet_named_pipe). Tune the filter to your environment.
+author: threat-reports
+date: 2026-06-18
+references:
+  - https://github.com/MSNightmare/RoguePlanet
+logsource:
+  product: windows
+  category: image_load
+detection:
+  selection:
+    ImageLoaded|endswith: '\virtdisk.dll'
+  filter_known_good:
+    Image|endswith:
+      - '\explorer.exe'
+      - '\diskmgmt.exe'
+      - '\diskpart.exe'
+      - '\mountvol.exe'
+      - '\vmware.exe'
+      - '\vmware-authd.exe'
+      - '\VBoxSVC.exe'
+      - '\VirtualBox.exe'
+      - '\Hyper-V Virtual Machine Bus.exe'
+      - '\StorageManagementService.exe'
+      - '\svchost.exe'
+      - '\mmc.exe'
+  condition: selection and not filter_known_good
+falsepositives:
+  - Setup programs and installers that mount ISO files for installation
+  - Game launchers that mount disc images
+  - Backup and imaging software (Acronis, Macrium, etc.)
+  - Virtual machine management tools not covered by the filter
+level: medium
+tags:
+  - attack.defense_evasion
+  - attack.t1553
+  - attack.t1564.004
