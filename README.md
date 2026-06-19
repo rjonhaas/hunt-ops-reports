@@ -119,4 +119,4 @@ sigma convert -t lucene -p ecs_windows \
 
 ## License
 
-All content in this repository is released under [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/) — no rights reserved. Use freely.
+Apache 2.0. See [LICENSE](LICENSE).
