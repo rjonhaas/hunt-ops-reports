@@ -7,6 +7,54 @@
 
 
 | comment "------------------------------------------------------------"
+| comment "DETECTION 6: ISO File Written to %TEMP% by User Process (Sysmon EID 11)"
+| comment "Confidence: MEDIUM - Stage 1, fires before Defender is involved"
+| comment "Survives payload changes: attacker must write an ISO regardless of contents"
+| comment "Correlate with Detection 7 (virtdisk.dll load) for high-confidence Stage 1 hit"
+| comment "------------------------------------------------------------"
+
+index=windows sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+  EventCode=11
+  (TargetFilename="*\\AppData\\Local\\Temp\\*" OR TargetFilename="*\\Windows\\Temp\\*")
+  TargetFilename="*.iso"
+  NOT Image IN (
+    "*\\svchost.exe",
+    "*\\TiWorker.exe",
+    "*\\TrustedInstaller.exe",
+    "*\\wuauclt.exe",
+    "*\\MsMpEng.exe",
+    "*\\explorer.exe"
+  )
+| table _time, Computer, Image, TargetFilename, User
+| sort -_time
+
+
+| comment "------------------------------------------------------------"
+| comment "DETECTION 7: virtdisk.dll Loaded by Non-Standard Process (Sysmon EID 7)"
+| comment "Confidence: MEDIUM - Stage 1 proxy for VirtDisk API use"
+| comment "Correlate with Detection 6 (ISO write) for high-confidence Stage 1 hit"
+| comment "------------------------------------------------------------"
+
+index=windows sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+  EventCode=7
+  ImageLoaded="*\\virtdisk.dll"
+  NOT Image IN (
+    "*\\explorer.exe",
+    "*\\diskmgmt.exe",
+    "*\\diskpart.exe",
+    "*\\mountvol.exe",
+    "*\\vmware.exe",
+    "*\\VBoxSVC.exe",
+    "*\\VirtualBox.exe",
+    "*\\StorageManagementService.exe",
+    "*\\svchost.exe",
+    "*\\mmc.exe"
+  )
+| table _time, Computer, ProcessId, Image, ImageLoaded, User
+| sort -_time
+
+
+| comment "------------------------------------------------------------"
 | comment "DETECTION 1: RoguePlanet Named Pipe (Sysmon EID 17)"
 | comment "Confidence: CRITICAL - hardcoded pipe name, zero false positives"
 | comment "------------------------------------------------------------"

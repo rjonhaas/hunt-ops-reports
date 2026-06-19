@@ -10,7 +10,8 @@
 - Standard user escalates to NT AUTHORITY\SYSTEM shell on Windows 10 and Windows 11, including the Canary channel, with patches current through June 2026.
 - Payload plants itself at C:\Windows\System32\wermgr.exe via an NTFS junction swap executed during Defender's cleanup write -- Defender itself is the write primitive.
 - SYSTEM execution is achieved by triggering the built-in WER QueueReporting scheduled task via the ITaskService COM interface.
-- Highest-confidence detection for the unmodified PoC: named pipe `\\.\pipe\RoguePlanet`, hardcoded and zero false positives but does not survive recompilation. Durable detections: MsMpEng.exe writing wermgr.exe, MpClient.dll loaded outside Defender processes, wermgr.exe spawning a shell child.
+- Strongest durable detections (Stage 1, survive recompilation): ISO file written to %TEMP% by a user process, and virtdisk.dll loaded by any process outside known disk management tools. These fire before Defender is ever triggered.
+- Highest-confidence detection for the unmodified PoC: named pipe `\\.\pipe\RoguePlanet`, hardcoded and zero false positives but does not survive recompilation. Durable post-exploitation detections: MsMpEng.exe writing wermgr.exe, MpClient.dll loaded outside Defender processes, wermgr.exe spawning a shell child.
 
 ---
 
@@ -226,6 +227,30 @@ Full ATT&CK Navigator layer: [mappings/mitre-layer.json](mappings/mitre-layer.js
 ## Detection Guidance
 
 ### Sysmon
+
+**ISO file written to %TEMP% by user process (EID 11 -- File Create) + virtdisk.dll load (EID 7 -- Image Load)**
+
+These are Stage 1 detections, firing before Defender is triggered and before any payload is executed. An attacker must write and mount an ISO regardless of what the payload contains, so these survive recompilation. Neither is standalone high-confidence, but together they are: a user process writing an ISO to %TEMP% and then loading virtdisk.dll within a short time window is a strong behavioral signal. Correlate them.
+
+```powershell
+# ISO written to Temp by a non-system process
+Get-WinEvent -LogName 'Microsoft-Windows-Sysmon/Operational' -FilterXPath `
+  "*[System[EventID=11] and EventData[Data[@Name='TargetFilename'][contains(text(),'\Temp\') and substring(text(), string-length(text()) - 3) = '.iso']]]" |
+  Where-Object {
+    $img = $_.Properties[4].Value
+    @('svchost.exe','TiWorker.exe','TrustedInstaller.exe','explorer.exe') -notcontains ($img | Split-Path -Leaf)
+  }
+```
+
+```powershell
+# virtdisk.dll loaded outside known disk management processes
+$known = @('explorer.exe','diskmgmt.exe','diskpart.exe','mountvol.exe','vmware.exe','VBoxSVC.exe','svchost.exe','mmc.exe')
+Get-WinEvent -LogName 'Microsoft-Windows-Sysmon/Operational' -FilterXPath `
+  "*[System[EventID=7] and EventData[Data[@Name='ImageLoaded'][contains(text(),'virtdisk.dll')]]]" |
+  Where-Object { $known -notcontains ($_.Properties[4].Value | Split-Path -Leaf) }
+```
+
+---
 
 **Named pipe (EID 17 -- Pipe Created)**
 

@@ -12,6 +12,70 @@
 
 
 // ------------------------------------------------------------
+// DETECTION 6: ISO File Written to %TEMP% by User Process (DeviceFileEvents)
+// Confidence: MEDIUM — Stage 1, fires before Defender is involved
+// Survives payload changes: attacker must write an ISO regardless of contents
+// Correlate with Detection 7 (virtdisk.dll load) for high-confidence Stage 1 hit
+// ------------------------------------------------------------
+DeviceFileEvents
+| where FileName endswith ".iso"
+| where FolderPath has_any (@"AppData\Local\Temp", @"Windows\Temp")
+| where ActionType in ("FileCreated", "FileRenamed")
+| where InitiatingProcessFileName !in~ (
+    "svchost.exe",
+    "TiWorker.exe",
+    "TrustedInstaller.exe",
+    "wuauclt.exe",
+    "MsMpEng.exe",
+    "explorer.exe"
+  )
+| project
+    Timestamp,
+    DeviceName,
+    InitiatingProcessFileName,
+    InitiatingProcessFolderPath,
+    InitiatingProcessCommandLine,
+    InitiatingProcessAccountName,
+    InitiatingProcessIntegrityLevel,
+    FolderPath,
+    FileName,
+    ActionType
+| order by Timestamp desc
+
+
+// ------------------------------------------------------------
+// DETECTION 7: virtdisk.dll Loaded by Non-Standard Process (DeviceImageLoadEvents)
+// Confidence: MEDIUM — Stage 1 proxy for VirtDisk API use (OpenVirtualDisk/AttachVirtualDisk)
+// Tune filter to your environment; game launchers and backup tools may load this DLL
+// Correlate with Detection 6 (ISO write) for high-confidence Stage 1 hit
+// ------------------------------------------------------------
+DeviceImageLoadEvents
+| where FileName =~ "virtdisk.dll"
+| where InitiatingProcessFileName !in~ (
+    "explorer.exe",
+    "diskmgmt.exe",
+    "diskpart.exe",
+    "mountvol.exe",
+    "vmware.exe",
+    "VBoxSVC.exe",
+    "VirtualBox.exe",
+    "svchost.exe",
+    "mmc.exe"
+  )
+| project
+    Timestamp,
+    DeviceName,
+    InitiatingProcessFileName,
+    InitiatingProcessFolderPath,
+    InitiatingProcessCommandLine,
+    InitiatingProcessAccountName,
+    InitiatingProcessIntegrityLevel,
+    FolderPath,
+    FileName
+| order by Timestamp desc
+
+
+// ------------------------------------------------------------
 // DETECTION 1: RoguePlanet Named Pipe (DeviceEvents)
 // Confidence: CRITICAL — hardcoded pipe name, zero false positives
 // ------------------------------------------------------------

@@ -1,0 +1,42 @@
+title: ISO File Written to User Temp Directory by Unexpected Process
+id: f7a8b9c0-d1e2-3456-fabc-345678901235
+status: experimental
+description: |
+  Detects an ISO image written to a user's %TEMP% directory by a non-system process.
+  RoguePlanet writes an embedded ~896 KB ISO to %TEMP%\RP_<UUID>\ before mounting it
+  via the VirtDisk API. Writing ISO files to temp directories is unusual for user processes
+  and is an early Stage 1 indicator, firing before Defender is triggered.
+
+  This detection survives payload changes -- the attacker must write and mount an ISO
+  regardless of what the payload contains. Correlate with rogueplanet_iso_temp_mount
+  (virtdisk.dll load) for high-confidence Stage 1 confirmation.
+author: threat-reports
+date: 2026-06-19
+references:
+  - https://github.com/MSNightmare/RoguePlanet
+logsource:
+  product: windows
+  category: file_event
+detection:
+  selection:
+    TargetFilename|contains:
+      - '\AppData\Local\Temp\'
+      - '\Windows\Temp\'
+    TargetFilename|endswith: '.iso'
+  filter_known_good:
+    Image|endswith:
+      - '\svchost.exe'
+      - '\TiWorker.exe'
+      - '\TrustedInstaller.exe'
+      - '\wuauclt.exe'
+      - '\MsMpEng.exe'
+      - '\explorer.exe'
+  condition: selection and not filter_known_good
+falsepositives:
+  - Software installers that extract ISO images to temp before mounting
+  - IT admin tooling or deployment scripts staging ISO files
+  - Developer tools building or testing ISO images
+level: medium
+tags:
+  - attack.defense_evasion
+  - attack.t1553

@@ -18,6 +18,48 @@
 
 
 // ------------------------------------------------------------
+// DETECTION 6: ISO File Written to %TEMP% by User Process (Sysmon EID 11)
+// Confidence: MEDIUM — Stage 1, fires before Defender is involved
+// Survives payload changes: attacker must write an ISO regardless of contents
+// Correlate with Detection 7 (virtdisk.dll load) for high-confidence Stage 1 hit
+// ------------------------------------------------------------
+event.code: "11"
+  and winlog.event_data.TargetFilename: (*\\AppData\\Local\\Temp\\* or *\\Windows\\Temp\\*)
+  and winlog.event_data.TargetFilename: *.iso
+  and not winlog.event_data.Image: (
+    *\\svchost.exe
+    or *\\TiWorker.exe
+    or *\\TrustedInstaller.exe
+    or *\\wuauclt.exe
+    or *\\MsMpEng.exe
+    or *\\explorer.exe
+  )
+
+
+// ------------------------------------------------------------
+// DETECTION 7: virtdisk.dll Loaded by Non-Standard Process (Sysmon EID 7)
+// Confidence: MEDIUM — Stage 1 proxy for VirtDisk API use (OpenVirtualDisk/AttachVirtualDisk)
+// Sysmon does not log VirtDisk API calls directly; DLL load is the available proxy
+// Tune filter_known_good to your environment (game launchers, backup tools may load this)
+// Correlate with Detection 6 (ISO write) for high-confidence Stage 1 hit
+// ------------------------------------------------------------
+event.code: "7"
+  and winlog.event_data.ImageLoaded: *\\virtdisk.dll
+  and not winlog.event_data.Image: (
+    *\\explorer.exe
+    or *\\diskmgmt.exe
+    or *\\diskpart.exe
+    or *\\mountvol.exe
+    or *\\vmware.exe
+    or *\\VBoxSVC.exe
+    or *\\VirtualBox.exe
+    or *\\StorageManagementService.exe
+    or *\\svchost.exe
+    or *\\mmc.exe
+  )
+
+
+// ------------------------------------------------------------
 // DETECTION 1: RoguePlanet Named Pipe (Sysmon EID 17)
 // Confidence: CRITICAL — hardcoded pipe name, zero false positives
 // ------------------------------------------------------------
