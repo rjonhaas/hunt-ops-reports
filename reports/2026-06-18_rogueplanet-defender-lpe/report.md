@@ -10,7 +10,7 @@
 - Standard user escalates to NT AUTHORITY\SYSTEM shell on Windows 10 and Windows 11, including the Canary channel, with patches current through June 2026.
 - Payload plants itself at C:\Windows\System32\wermgr.exe via an NTFS junction swap executed during Defender's cleanup write -- Defender itself is the write primitive.
 - SYSTEM execution is achieved by triggering the built-in WER QueueReporting scheduled task via the ITaskService COM interface.
-- Highest-confidence detection: named pipe `\\.\pipe\RoguePlanet` -- hardcoded in the binary, no legitimate software uses this name, zero false positives.
+- Highest-confidence detection for the unmodified PoC: named pipe `\\.\pipe\RoguePlanet`, hardcoded and zero false positives but does not survive recompilation. Durable detections: MsMpEng.exe writing wermgr.exe, MpClient.dll loaded outside Defender processes, wermgr.exe spawning a shell child.
 
 ---
 
@@ -229,7 +229,7 @@ Full ATT&CK Navigator layer: [mappings/mitre-layer.json](mappings/mitre-layer.js
 
 **Named pipe (EID 17 -- Pipe Created)**
 
-The named pipe `\RoguePlanet` is hardcoded. This is the highest-fidelity detection and should be alerting at critical severity.
+The named pipe `\RoguePlanet` is hardcoded in the public PoC and catches the unmodified binary with zero false positives. It does not survive recompilation, so treat it as a PoC-specific tripwire rather than a durable detection. The behavioral detections below (MsMpEng.exe writing wermgr.exe, MpClient.dll outside Defender, wermgr.exe spawning a shell) are the authoritative alert threshold.
 
 ```powershell
 # PowerShell: query Sysmon operational log for pipe creation
